@@ -181,20 +181,38 @@ def safe_str(val, default="TBA"):
     return default if s.lower() in ("nan", "none", "") else s
 
 
+def normalize_filename(name):
+    """Normalize file names so space/underscore/parenthesis variations still match."""
+    return re.sub(r"[^a-z0-9]", "", str(name).lower())
+
+
 # ── Main preprocess function (ONE definition only) ───────────────────────────
 
 def preprocess():
     seen        = set()
     timetable   = []
     sharing_map = {}
+    available_excel_files = {
+        normalize_filename(fname): fname
+        for fname in os.listdir(DATASET_DIR)
+        if fname.lower().endswith(".xlsx")
+    }
 
     for fname in EXCEL_FILES:
         fpath = os.path.join(DATASET_DIR, fname)
         if not os.path.exists(fpath):
+            matched_name = available_excel_files.get(normalize_filename(fname))
+            if matched_name:
+                fpath = os.path.join(DATASET_DIR, matched_name)
+            else:
+                print(f"[SKIP] File not found: {fname}")
+                continue
+
+        if not os.path.exists(fpath):
             print(f"[SKIP] File not found: {fname}")
             continue
 
-        day = infer_day_from_filename(fname)
+        day = infer_day_from_filename(os.path.basename(fpath))
         xls = pd.ExcelFile(fpath)
 
         for sheet in xls.sheet_names:
