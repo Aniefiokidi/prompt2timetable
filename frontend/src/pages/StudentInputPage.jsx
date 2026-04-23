@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getDepartments, getStudentTimetable } from "../services/api";
+import AppShell from "../components/AppShell";
+import BackButton from "../components/BackButton";
 
 
 const CU_STRUCTURE = [
@@ -99,8 +101,11 @@ export default function StudentInputPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4">
-      <form className="bg-cu-purple/10 rounded-xl shadow-lg p-8 w-full max-w-md" onSubmit={handleSubmit}>
+    <AppShell title="Departmental Timetable Lookup" subtitle="Select your college, department, programme and level.">
+      <div className="mb-4">
+        <BackButton label="Back" />
+      </div>
+      <form className="bg-cu-purple/5 rounded-xl border border-cu-purple/20 p-8 w-full max-w-xl" onSubmit={handleSubmit}>
         <h2 className="text-2xl font-bold mb-4 text-cu-purple">Departmental Timetable Lookup</h2>
         <div className="mb-4">
           <label className="block mb-1 font-medium text-cu-purple">College</label>
@@ -169,6 +174,6 @@ export default function StudentInputPage() {
           View Timetable
         </button>
       </form>
-    </div>
+    </AppShell>
   );
 }

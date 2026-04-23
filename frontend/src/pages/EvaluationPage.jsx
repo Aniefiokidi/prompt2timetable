@@ -1,5 +1,7 @@
 
 import React, { useEffect, useState } from "react";
+import AppShell from "../components/AppShell";
+import BackButton from "../components/BackButton";
 
 export default function EvaluationPage() {
   const [stats, setStats] = useState(null);
@@ -32,19 +34,19 @@ export default function EvaluationPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-8 text-center">Loading timetable stats...</div>;
-  if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
-  if (!stats) return null;
+  if (loading) return <AppShell title="Timetable Stats"><div className="p-8 text-center">Loading timetable stats...</div></AppShell>;
+  if (error) return <AppShell title="Timetable Stats"><div className="p-8 text-center text-red-600">{error}</div></AppShell>;
+  if (!stats) return <AppShell title="Timetable Stats"><div className="p-8 text-center">No stats available.</div></AppShell>;
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4 text-cu-purple">Timetable Stats</h1>
+    <AppShell title="Timetable Stats" subtitle="Quick metrics from loaded timetable samples.">
+      <BackButton label="Back" />
       <ul className="mb-6 space-y-2">
         <li><b>Total Courses Loaded:</b> {stats.totalCourses}</li>
         <li><b>Rooms in Use:</b> {stats.rooms.join(", ")}</li>
         <li><b>Busiest Day:</b> {stats.busiestDay}</li>
         <li><b>Most Loaded Level:</b> {stats.mostLoadedLevel}</li>
       </ul>
-    </div>
+    </AppShell>
   );
 }
