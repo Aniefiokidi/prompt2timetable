@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import covenantLogo from "../assets/covenant-logo.svg";
 
 const NAV_ITEMS = [
   { label: "Home", to: "/" },
@@ -15,9 +16,16 @@ export default function AppShell({ title, subtitle, children }) {
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="bg-cu-purple text-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-3">
+            <img
+              src={covenantLogo}
+              alt="Covenant University logo"
+              className="h-12 w-12 rounded-full border border-cu-gold/40 bg-white/5 p-1"
+            />
+            <div>
             <h1 className="text-xl md:text-2xl font-bold">CU Timetable Portal</h1>
             <p className="text-sm text-white/80">Covenant University schedule assistant</p>
+            </div>
           </div>
         </div>
       </header>
