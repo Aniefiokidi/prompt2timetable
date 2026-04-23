@@ -1,23 +1,26 @@
 import json
 import os
+import re
 from typing import Dict, Any
 
 DEPARTMENT_MAP = {
     # COE
-    "EIE": ["Electrical and Information Engineering", "EIE", "Computer Engineering", "CEN", "Electrical and Electronics Engineering", "EEE", "Information and Communication Engineering", "ICE"],
+    "EIE": ["Electrical and Information Engineering", "EIE", "Computer Engineering", "CEN",
+            "Electrical and Electronics Engineering", "EEE", "Information and Communication Engineering", "ICE"],
     "MCE": ["Mechanical Engineering", "MCE", "MEE"],
     "CVE": ["Civil Engineering", "CVE"],
     "CHE": ["Chemical Engineering", "CHE", "TCH"],
     "PET": ["Petroleum Engineering", "PET", "PEE"],
     # CST
-    "CIS": ["Computer and Information Sciences", "CIS", "Computer Science", "CSC", "Management Information Systems", "MIS"],
+    "CIS": ["Computer and Information Sciences", "CIS", "Computer Science", "CSC",
+            "Management Information Systems", "MIS"],
     "BCH": ["Biochemistry", "BCH"],
     "BIO": ["Biological Sciences", "BIO", "MCB", "Biology", "Microbiology"],
     "CHM": ["Chemistry", "CHM", "ICH", "Industrial Chemistry"],
     "MAT": ["Mathematics", "MAT", "MTH", "STA", "Industrial Mathematics"],
     "PHY": ["Physics", "PHY", "Industrial Physics"],
     "ARC": ["Architecture", "ARC", "FAA"],
-    "BLD": ["Building Technology", "BLD"],
+    "BLD": ["Building Technology", "BLD", "BUD", "SVY"],
     "ESM": ["Estate Management", "ESM"],
     # CMSS
     "ACC": ["Accounting", "ACC"],
@@ -29,129 +32,145 @@ DEPARTMENT_MAP = {
     "SOC": ["Sociology", "SOC"],
     "IRH": ["Industrial Relations and Human Resource Management", "IRH", "HMD", "IRHM"],
     # CLDS
-    "ENG": ["English", "ENG", "LIT"],
+    "ENG": ["English", "ENG", "LIT", "EHR", "FRE"],
     "IRL": ["International Relations", "IRL"],
-    "PSS": ["Policy and Strategic Studies", "PSS"],
+    "PSS": ["Policy and Strategic Studies", "PSS", "AMS"],
     "POS": ["Political Science", "POS"],
-    "PSY": ["Psychology", "PSY", "PSI"],
+    "PSY": ["Psychology", "PSY", "PSI", "SSC"],
 }
+
+# Course-code prefixes that belong to each department key
+DEPT_CODE_PREFIXES = {
+    "EIE": ["CEN", "EEE", "ICE", "EIE"],
+    "MCE": ["MCE", "MEE"],
+    "CVE": ["CVE"],
+    "CHE": ["CHE", "TCH"],
+    "PET": ["PET", "PEE"],
+    "CIS": ["CSC", "MIS", "CIS", "CYB", "SEN", "IFT", "COS"],
+    "BCH": ["BCH"],
+    "BIO": ["BIO", "MCB"],
+    "CHM": ["CHM", "ICH", "INS"],
+    "MAT": ["MAT", "MTH", "STA", "IMT"],
+    "PHY": ["PHY"],
+    "ARC": ["ARC", "FAA"],
+    "BLD": ["BLD", "BUD", "SVY"],
+    "ESM": ["ESM", "MCT"],
+    "ACC": ["ACC"],
+    "BUA": ["BUA", "BUS"],
+    "ECN": ["ECN", "ECO", "CBS"],
+    "FIN": ["FIN", "BFN"],
+    "MKT": ["MKT"],
+    "MAC": ["MAC", "MCM", "PRE", "CMS"],
+    "SOC": ["SOC"],
+    "IRH": ["IRH", "HMD"],
+    "ENG": ["ENG", "LIT", "EHR", "FRE"],
+    "IRL": ["IRL"],
+    "PSS": ["PSS", "AMS", "FAC"],
+    "POS": ["POS"],
+    "PSY": ["PSY", "PSI", "SSC"],
+}
+
+GENERAL_PREFIXES = ["GST", "DLD", "TMC", "EDS", "CIT", "COV", "GEC", "GET"]
 
 def load_processed():
     path = os.path.join(os.path.dirname(__file__), 'data', 'processed_timetable.json')
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            f"processed_timetable.json not found at {path}. "
+            "Please run: python backend/preprocess.py"
+        )
     with open(path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def normalize_level(level):
-    try:
-        return int(str(level).replace("L", "").strip())
-    except Exception:
-        return str(level).strip()
 
-def get_dept_aliases(dept_code, dept_name):
-    for code, aliases in DEPARTMENT_MAP.items():
-        if dept_code and dept_code.strip().upper() == code:
-            return [a.lower().strip() for a in aliases] + [code.lower().strip()]
-        # Allow substring match for dept_name
-        if dept_name:
-            for alias in aliases:
-                if alias.lower().strip() in dept_name.lower().strip() or dept_name.lower().strip() in alias.lower().strip():
-                    return [a.lower().strip() for a in aliases] + [code.lower().strip()]
-    out = []
-    if dept_code:
-        out.append(dept_code.lower().strip())
-    if dept_name:
-        out.append(dept_name.lower().strip())
-    return out
+def normalize_level(level):
+    """Convert any level representation to an integer, e.g. '300L' → 300."""
+    try:
+        return int(re.sub(r"[^\d]", "", str(level)))
+    except (ValueError, TypeError):
+        return None
+
+
+def get_dept_key(dept_input: str) -> str:
+    """Given any dept string (code or full name), return the canonical DEPARTMENT_MAP key."""
+    if not dept_input:
+        return ""
+    d = dept_input.strip().upper()
+    # Direct key match
+    if d in DEPARTMENT_MAP:
+        return d
+    # Match against aliases
+    for key, aliases in DEPARTMENT_MAP.items():
+        for alias in aliases:
+            if d == alias.upper():
+                return key
+    # Fuzzy substring match (full name contains alias)
+    for key, aliases in DEPARTMENT_MAP.items():
+        for alias in aliases:
+            if alias.upper() in d or d in alias.upper():
+                return key
+    return ""
+
 
 def resolve_dept_level_timetable(
     department: str = None,
-    level: str = None,
+    level=None,
     programme: str = None,
     college: str = None,
     department_code: str = None,
-    department_name: str = None
+    department_name: str = None,
 ) -> Dict[str, Any]:
+
     data = load_processed()
-    timetable = data['timetable']
-    aliases = get_dept_aliases(department_code or department, department_name or department)
-    level_norm = normalize_level(level)
-    def match_level(row):
-        row_level = row.get('level', '')
-        shared_levels = row.get('shared_levels', [])
-        # If row_level is a list, check membership
-        if isinstance(row_level, list):
-            return any(str(normalize_level(l)) == str(level_norm) for l in row_level)
-        # If row_level is a string that looks like a list (e.g., '[300]'), try to eval
-        if isinstance(row_level, str) and row_level.startswith('[') and row_level.endswith(']'):
-            try:
-                import ast
-                levels = ast.literal_eval(row_level)
-                return any(str(normalize_level(l)) == str(level_norm) for l in levels)
-            except Exception:
-                pass
-        # If shared_levels is present and level_norm is int, check membership
-        if shared_levels and isinstance(level_norm, int):
-            return level_norm in [normalize_level(l) for l in shared_levels]
-        # Otherwise, compare as string
-        return str(normalize_level(row_level)) == str(level_norm)
-    def match_dept(row):
-        dept = row.get('department', '').lower().strip()
-        code = row.get('course_code', '').lower().strip()
-        prog = row.get('programme', '').lower().strip()
-        # DEBUG: Print what is being compared
-        print(f"DEBUG: Comparing dept='{dept}', code='{code}', prog='{prog}' to aliases={aliases}")
-        for alias in aliases:
-            if alias in dept:
-                print(f"DEBUG: dept match: '{dept}' contains '{alias}'")
-                return True
-            if alias in prog:
-                print(f"DEBUG: prog match: '{prog}' contains '{alias}'")
-                return True
-            if code.startswith(alias.lower()):
-                print(f"DEBUG: code match: {code} startswith {alias.lower()}")
-                return True
-        return False
-    def match_college(row):
-        if not college:
+    timetable = data["timetable"]
+
+    # Determine canonical dept key
+    dept_input = department_code or department_name or department or ""
+    dept_key = get_dept_key(dept_input)
+    allowed_prefixes = set(DEPT_CODE_PREFIXES.get(dept_key, []))
+
+    # Normalize requested level
+    level_int = normalize_level(level)
+
+    def row_level_matches(row):
+        """True if the row's level list includes level_int."""
+        if level_int is None:
             return True
-        return row.get('college', '').lower().strip() == college.lower().strip()
-    def is_general(row):
-        dept = row.get('department', '').lower().strip()
-        code = row.get('course_code', '').lower().strip()
-        return any(x in dept for x in ['general', 'gst', 'dld', 'tmc']) or any(x in code for x in ['gst', 'dld', 'tmc'])
-    filtered = [row for row in timetable if (match_college(row) and match_level(row) and (match_dept(row) or is_general(row)))]
-    # DEBUG: Print how many rows match before/after programme filtering
-    print(f"DEBUG: {len(filtered)} rows match college/level/dept for {department_code or department} {level}")
-    # TEMP: Disable programme filtering to isolate bug
-    # if programme:
-    #     filtered = [row for row in filtered if str(row.get('programme', '')).strip().lower() == programme.strip().lower()]
-    print(f"DEBUG: Returning {len(filtered)} rows for {department_code or department} {level}")
+        row_level = row.get("level", [])
+        # stored as list of ints or strings
+        if isinstance(row_level, list):
+            return any(normalize_level(l) == level_int for l in row_level)
+        return normalize_level(row_level) == level_int
+
+    def row_dept_matches(row):
+        """True if course code prefix matches this dept, or it's a general course."""
+        code = str(row.get("course_code", "")).strip().upper()
+        prefix = re.match(r"([A-Z]{2,4})", code)
+        prefix = prefix.group(1) if prefix else ""
+
+        # General / university-wide courses always included
+        if prefix in GENERAL_PREFIXES or row.get("is_general"):
+            return True
+        # Match by course-code prefix
+        if prefix in allowed_prefixes:
+            return True
+        # Fall back: match stored department field
+        stored_dept = str(row.get("department", "")).strip()
+        stored_key = get_dept_key(stored_dept)
+        if stored_key and stored_key == dept_key:
+            return True
+        return False
+
+    filtered = [
+        row for row in timetable
+        if row_level_matches(row) and row_dept_matches(row)
+    ]
+
     return {
-        "department": department,
-        "department_code": department_code,
-        "department_name": department_name,
+        "department": dept_input,
+        "department_code": department_code or dept_key,
+        "department_name": department_name or department,
         "level": level,
         "programme": programme,
-        "timetable": filtered
-    }
-import json
-import os
-from typing import Dict, Any
-
-def load_processed():
-    path = os.path.join(os.path.dirname(__file__), 'data', 'processed_timetable.json')
-    with open(path, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-def resolve_dept_level_timetable(department: str, level: str, programme: str = None) -> Dict[str, Any]:
-    data = load_processed()
-    timetable = data['timetable']
-    filtered = [row for row in timetable if str(row.get('LEVEL', '')).strip() == str(level).strip() and str(row.get('DEPARTMENT', '')).strip().upper() == department.upper()]
-    if programme:
-        filtered = [row for row in filtered if str(row.get('PROGRAMME', '')).strip().lower() == programme.strip().lower()]
-    return {
-        "department": department,
-        "level": level,
-        "programme": programme,
-        "timetable": filtered
+        "timetable": filtered,
     }

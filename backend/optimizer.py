@@ -44,15 +44,18 @@ def find_violations(timetable):
     seen = set()
     violations = []
     for i, entry in enumerate(timetable):
-        key = (entry['lecturer'], entry['day'], entry['start_time'])
+        # Skip clash checks if start_time is 'TBA'
+        if entry.get('start_time', 'TBA') == 'TBA':
+            continue
+        key = (entry.get('lecturer', 'TBA'), entry.get('day', 'TBA'), entry.get('start_time', 'TBA'))
         if key in seen:
             violations.append({'index': i, 'reason': 'Lecturer overlap'})
         seen.add(key)
-        room_key = (entry['room'], entry['day'], entry['start_time'])
+        room_key = (entry.get('room', 'TBA'), entry.get('day', 'TBA'), entry.get('start_time', 'TBA'))
         if room_key in seen:
             violations.append({'index': i, 'reason': 'Room overlap'})
         seen.add(room_key)
-        group_key = (entry['level'], entry['department'], entry['day'], entry['start_time'])
+        group_key = (entry.get('level', 'TBA'), entry.get('department', 'TBA'), entry.get('day', 'TBA'), entry.get('start_time', 'TBA'))
         if group_key in seen:
             violations.append({'index': i, 'reason': 'Student group overlap'})
         seen.add(group_key)
@@ -60,12 +63,15 @@ def find_violations(timetable):
     return violations
 
 def is_conflict(a, b):
+    # If either entry has TBA times, cannot determine clash, skip
+    if a.get('start_time', 'TBA') == 'TBA' or b.get('start_time', 'TBA') == 'TBA':
+        return False
     return (
-        a['lecturer'] == b['lecturer'] and a['day'] == b['day'] and a['start_time'] == b['start_time']
+        a.get('lecturer', 'TBA') == b.get('lecturer', 'TBA') and a.get('day', 'TBA') == b.get('day', 'TBA') and a.get('start_time', 'TBA') == b.get('start_time', 'TBA')
     ) or (
-        a['room'] == b['room'] and a['day'] == b['day'] and a['start_time'] == b['start_time']
+        a.get('room', 'TBA') == b.get('room', 'TBA') and a.get('day', 'TBA') == b.get('day', 'TBA') and a.get('start_time', 'TBA') == b.get('start_time', 'TBA')
     ) or (
-        a['level'] == b['level'] and a['department'] == b['department'] and a['day'] == b['day'] and a['start_time'] == b['start_time']
+        a.get('level', 'TBA') == b.get('level', 'TBA') and a.get('department', 'TBA') == b.get('department', 'TBA') and a.get('day', 'TBA') == b.get('day', 'TBA') and a.get('start_time', 'TBA') == b.get('start_time', 'TBA')
     )
 
 def optimize_timetable(timetable):
