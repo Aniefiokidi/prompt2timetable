@@ -2,6 +2,7 @@ import json
 import os
 import re
 from typing import Dict, Any
+from collections import defaultdict
 
 DEPARTMENT_MAP = {
     # COE
@@ -75,12 +76,38 @@ GENERAL_PREFIXES = ["GST", "DLD", "TMC", "EDS", "CIT", "COV", "GEC", "GET"]
 def load_processed():
     path = os.path.join(os.path.dirname(__file__), 'data', 'processed_timetable.json')
     if not os.path.exists(path):
-        raise FileNotFoundError(
-            f"processed_timetable.json not found at {path}. "
-            "Please run: python backend/preprocess.py"
+        data = {"timetable": []}
+    else:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+    timetable = data.get("timetable", [])
+    if timetable:
+        return data
+
+    # Auto-recover: regenerate processed_timetable.json from TIMETABLE/*.xlsx
+    try:
+        try:
+            from preprocess import preprocess
+        except ImportError:
+            from backend.preprocess import preprocess
+        generated = preprocess()
+    except Exception as e:
+        raise RuntimeError(
+            "processed_timetable.json is missing/empty and auto-preprocess failed. "
+            "Ensure TIMETABLE Excel files exist, then run: python backend/preprocess.py. "
+            f"Underlying error: {e}"
+        ) from e
+
+    generated_rows = generated.get("timetable", [])
+    if not generated_rows:
+        raise RuntimeError(
+            "processed_timetable.json has no timetable entries after preprocessing. "
+            "Check TIMETABLE Excel files and required sheet/column structure, then rerun: "
+            "python backend/preprocess.py"
         )
-    with open(path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+
+    return generated
 
 
 def normalize_level(level):
@@ -89,6 +116,77 @@ def normalize_level(level):
         return int(re.sub(r"[^\d]", "", str(level)))
     except (ValueError, TypeError):
         return None
+
+
+def parse_hour_from_time_label(time_label):
+    if not time_label:
+        return None
+    m = re.match(r"^\s*(\d{1,2})", str(time_label))
+    if not m:
+        return None
+    hour = int(m.group(1))
+    return hour if 0 <= hour <= 23 else None
+
+
+def format_hour(hour):
+    return f"{hour:02d}:00"
+
+
+def safe_duration_hours(raw_value):
+    try:
+        return max(1, int(float(raw_value)))
+    except (TypeError, ValueError):
+        return 1
+
+
+def assign_missing_times(rows):
+    """
+    Fill TBA/missing start/end times with deterministic non-clashing slots per day.
+    Existing valid time assignments are preserved.
+    """
+    rows_by_day = defaultdict(list)
+    for row in rows:
+        day = str(row.get("day", "Unknown"))
+        rows_by_day[day].append(row)
+
+    day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    ordered_days = [d for d in day_order if d in rows_by_day] + [d for d in rows_by_day if d not in day_order]
+
+    for day in ordered_days:
+        day_rows = rows_by_day[day]
+        used_hours = set()
+
+        # Reserve hours already explicitly scheduled
+        for row in day_rows:
+            h = parse_hour_from_time_label(row.get("start_time"))
+            if h is not None:
+                duration = safe_duration_hours(row.get("hours", 1))
+                for slot in range(h, min(h + duration, 24)):
+                    used_hours.add(slot)
+
+        # Assign sequential free hours to unscheduled rows
+        next_hour = 7
+        for row in day_rows:
+            current_hour = parse_hour_from_time_label(row.get("start_time"))
+            if current_hour is not None:
+                # Ensure an end time exists for existing start time rows
+                if not row.get("end_time") or str(row.get("end_time")).strip().upper() == "TBA":
+                    duration = safe_duration_hours(row.get("hours", 1))
+                    row["end_time"] = format_hour(min(current_hour + duration, 23))
+                continue
+
+            duration = safe_duration_hours(row.get("hours", 1))
+            while any(slot in used_hours for slot in range(next_hour, min(next_hour + duration, 24))):
+                next_hour += 1
+            start_hour = next_hour
+            end_hour = min(start_hour + duration, 23)
+            row["start_time"] = format_hour(start_hour)
+            row["end_time"] = format_hour(end_hour)
+            for slot in range(start_hour, min(start_hour + duration, 24)):
+                used_hours.add(slot)
+            next_hour += 1
+
+    return rows
 
 
 def get_dept_key(dept_input: str) -> str:
@@ -165,6 +263,8 @@ def resolve_dept_level_timetable(
         row for row in timetable
         if row_level_matches(row) and row_dept_matches(row)
     ]
+
+    filtered = assign_missing_times(filtered)
 
     return {
         "department": dept_input,
