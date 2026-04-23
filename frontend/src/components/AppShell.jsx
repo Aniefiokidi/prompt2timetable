@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import covenantLogo from "../assets/covenant-logo.svg";
+import cuLogo from "../assets/covenant-university-logo-desktop.png";
 
 const NAV_ITEMS = [
   { label: "Home", to: "/" },
@@ -18,7 +18,7 @@ export default function AppShell({ title, subtitle, children }) {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
-              src={covenantLogo}
+              src={cuLogo}
               alt="Covenant University logo"
               className="h-12 w-12 rounded-full border border-cu-gold/40 bg-white/5 p-1"
             />
