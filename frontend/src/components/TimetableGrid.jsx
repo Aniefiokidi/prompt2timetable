@@ -24,6 +24,24 @@ function detectClashes(timetable) {
   return Object.values(slots).filter(arr => arr.length > 1);
 }
 
+function parseStartHour(startTime) {
+  if (!startTime) return null;
+  const raw = String(startTime).trim();
+  const m = raw.match(/^(\d{1,2})(?::\d{2})?\s*(AM|PM)?$/i);
+  if (!m) return null;
+  let hour = parseInt(m[1], 10);
+  const meridiem = (m[2] || "").toUpperCase();
+  if (meridiem === "PM" && hour < 12) hour += 12;
+  if (meridiem === "AM" && hour === 12) hour = 0;
+  return Number.isNaN(hour) ? null : hour;
+}
+
+function getTimeLabel(course) {
+  const start = course.start_time || "TBA";
+  const end = course.end_time || "TBA";
+  return `${start} - ${end}`;
+}
+
 
 export default function TimetableGrid({ timetable }) {
   const [selected, setSelected] = useState(null);
@@ -72,7 +90,7 @@ export default function TimetableGrid({ timetable }) {
                   <td className="border p-2 font-semibold bg-gray-50">{hour}:00 - {hour + 1}:00</td>
                   {DAYS.map(day => {
                     const cellCourses = timetable.filter(c => {
-                      const start = parseInt(c.start_time.split(":")[0], 10);
+                      const start = parseStartHour(c.start_time);
                       return c.day === day && start === hour;
                     });
                     return (
@@ -94,6 +112,31 @@ export default function TimetableGrid({ timetable }) {
                   })}
                 </tr>
               ))}
+              <tr>
+                <td className="border p-2 font-semibold bg-gray-50">Unscheduled</td>
+                {DAYS.map(day => {
+                  const unscheduledCourses = timetable.filter(c => {
+                    const start = parseStartHour(c.start_time);
+                    return c.day === day && (start === null || Number.isNaN(start));
+                  });
+                  return (
+                    <td key={`${day}-unscheduled`} className="border p-1 align-top min-w-[120px]">
+                      {unscheduledCourses.map((course, idx) => (
+                        <div
+                          key={course.course_code + idx}
+                          className="rounded p-1 mb-1 cursor-pointer relative"
+                          style={{ background: getColor(course.course_code) }}
+                          onClick={() => setSelected(course)}
+                        >
+                          <span className="font-bold">{course.course_code}</span>
+                          <div className="text-xs">{course.room}</div>
+                          <div className="text-xs">{getTimeLabel(course)}</div>
+                        </div>
+                      ))}
+                    </td>
+                  );
+                })}
+              </tr>
             </tbody>
           </table>
         </div>
@@ -103,7 +146,17 @@ export default function TimetableGrid({ timetable }) {
             <div key={day} className="mb-4">
               <h3 className="font-bold text-cu-purple mb-2">{day}</h3>
               {timetable.filter(c => c.day === day).length === 0 && <div className="text-gray-400">No classes</div>}
-              {timetable.filter(c => c.day === day).map((course, idx) => (
+              {timetable
+                .filter(c => c.day === day)
+                .sort((a, b) => {
+                  const ah = parseStartHour(a.start_time);
+                  const bh = parseStartHour(b.start_time);
+                  if (ah === null && bh === null) return 0;
+                  if (ah === null) return 1;
+                  if (bh === null) return -1;
+                  return ah - bh;
+                })
+                .map((course, idx) => (
                 <div
                   key={course.course_code + idx}
                   className="rounded p-2 mb-2 cursor-pointer border-l-4"
@@ -113,6 +166,7 @@ export default function TimetableGrid({ timetable }) {
                   <span className="font-bold">{course.course_code}</span>
                   <span className="ml-2 text-xs">{course.room}</span>
                   <span className="ml-2 text-xs">{course.lecturer}</span>
+                  <span className="ml-2 text-xs font-medium">{getTimeLabel(course)}</span>
                 </div>
               ))}
             </div>
