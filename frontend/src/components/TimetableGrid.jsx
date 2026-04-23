@@ -37,9 +37,16 @@ function parseStartHour(startTime) {
 }
 
 function getTimeLabel(course) {
-  const start = course.start_time || "TBA";
-  const end = course.end_time || "TBA";
-  return `${start} - ${end}`;
+  const start = String(course.start_time || "").trim().toUpperCase();
+  const end = String(course.end_time || "").trim().toUpperCase();
+  if (!start || !end || start === "TBA" || end === "TBA") return "";
+  return `${course.start_time} - ${course.end_time}`;
+}
+
+function cleanText(value) {
+  const text = String(value || "").trim();
+  if (!text || text.toUpperCase() === "TBA") return "";
+  return text;
 }
 
 
@@ -105,8 +112,8 @@ export default function TimetableGrid({ timetable }) {
                             onClick={() => setSelected(course)}
                           >
                             <span className="font-bold">{course.course_code}</span>
-                            <div className="text-xs">{course.room}</div>
-                            <div className="text-xs">{course.lecturer}</div>
+                            {cleanText(course.room) && <div className="text-xs">{cleanText(course.room)}</div>}
+                            {cleanText(course.lecturer) && <div className="text-xs">{cleanText(course.lecturer)}</div>}
                           </div>
                         ))}
                       </td>
@@ -131,8 +138,8 @@ export default function TimetableGrid({ timetable }) {
                           onClick={() => setSelected(course)}
                         >
                           <span className="font-bold">{course.course_code}</span>
-                          <div className="text-xs">{course.room}</div>
-                          <div className="text-xs">{getTimeLabel(course)}</div>
+                          {cleanText(course.room) && <div className="text-xs">{cleanText(course.room)}</div>}
+                          {getTimeLabel(course) && <div className="text-xs">{getTimeLabel(course)}</div>}
                         </div>
                       ))}
                     </td>
@@ -166,9 +173,9 @@ export default function TimetableGrid({ timetable }) {
                   onClick={() => setSelected(course)}
                 >
                   <span className="font-bold">{course.course_code}</span>
-                  <span className="ml-2 text-xs">{course.room}</span>
-                  <span className="ml-2 text-xs">{course.lecturer}</span>
-                  <span className="ml-2 text-xs font-medium">{getTimeLabel(course)}</span>
+                  {cleanText(course.room) && <span className="ml-2 text-xs">{cleanText(course.room)}</span>}
+                  {cleanText(course.lecturer) && <span className="ml-2 text-xs">{cleanText(course.lecturer)}</span>}
+                  {getTimeLabel(course) && <span className="ml-2 text-xs font-medium">{getTimeLabel(course)}</span>}
                 </div>
               ))}
             </div>
