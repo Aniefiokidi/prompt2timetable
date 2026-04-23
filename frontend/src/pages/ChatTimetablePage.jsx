@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import AppShell from "../components/AppShell";
 import TimetableGrid from "../components/TimetableGrid";
+import { getStudentTimetable } from "../services/api";
 
 const seedMessages = [
   { role: "assistant", text: "Hello Admin! 👋 How can I help you today?" },
@@ -19,16 +20,106 @@ const sampleTimetable = [
 export default function ChatTimetablePage() {
   const [messages, setMessages] = useState(seedMessages);
   const [input, setInput] = useState("");
-  const timetable = useMemo(() => {
+  const [loading, setLoading] = useState(false);
+  const [timetable, setTimetable] = useState(() => {
     const local = JSON.parse(window.localStorage.getItem("timetable") || "null");
     return local?.timetable?.length ? local.timetable : sampleTimetable;
-  }, []);
+  });
 
-  const sendMessage = () => {
+  const aliasConfig = useMemo(
+    () => ({
+      MIS: {
+        aliases: ["MIS", "MANAGEMENT INFORMATION SYSTEM", "MANAGEMENT INFORMATION SYSTEMS"],
+        college: "CST",
+        department_code: "CIS",
+        department_name: "Department of Computer and Information Sciences",
+        programme: "Management Information Systems",
+      },
+      ICE: {
+        aliases: ["ICE", "INFORMATION COMMUNICATION ENGINEERING", "INFORMATION AND COMMUNICATION ENGINEERING"],
+        college: "COE",
+        department_code: "EIE",
+        department_name: "Department of Electrical and Information Engineering",
+        programme: "Information and Communication Engineering",
+      },
+      EIE: {
+        aliases: ["EIE", "EEE", "ELECTRICAL ENGINEERING", "ELECTRICAL AND ELECTRONICS ENGINEERING"],
+        college: "COE",
+        department_code: "EIE",
+        department_name: "Department of Electrical and Information Engineering",
+        programme: "Electrical and Electronics Engineering",
+      },
+      CSC: {
+        aliases: ["CSC", "COMPUTER SCIENCE"],
+        college: "CST",
+        department_code: "CIS",
+        department_name: "Department of Computer and Information Sciences",
+        programme: "Computer Science",
+      },
+      MAC: {
+        aliases: ["MAC", "MASS COMMUNICATION"],
+        college: "CMSS",
+        department_code: "MAC",
+        department_name: "Department of Mass Communication",
+        programme: "Mass Communication",
+      },
+    }),
+    []
+  );
+
+  const parsePrompt = (text) => {
+    const upper = text.toUpperCase();
+    const levelMatch = upper.match(/\b(100|200|300|400|500)\b/);
+    const level = levelMatch ? levelMatch[1] : null;
+
+    const aliasEntry = Object.values(aliasConfig).find((cfg) => cfg.aliases.some((a) => upper.includes(a)));
+    if (!aliasEntry || !level) return null;
+
+    return {
+      college: aliasEntry.college,
+      department: aliasEntry.department_code,
+      department_code: aliasEntry.department_code,
+      department_name: aliasEntry.department_name,
+      programme: aliasEntry.programme,
+      level,
+    };
+  };
+
+  const sendMessage = async () => {
     if (!input.trim()) return;
-    const next = [...messages, { role: "user", text: input }, { role: "assistant", text: "Timetable updated. You can review on the right panel." }];
-    setMessages(next);
+    const userText = input.trim();
+    setMessages((prev) => [...prev, { role: "user", text: userText }]);
     setInput("");
+
+    const payload = parsePrompt(userText);
+    if (!payload) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: "Please include both a level (e.g., 200) and a course/department keyword (e.g., MIS, ICE, EIE, CSC, MAC).",
+        },
+      ]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const data = await getStudentTimetable(payload);
+      setTimetable(data.timetable || []);
+      window.localStorage.setItem("timetable", JSON.stringify(data));
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: `Timetable generated for ${payload.level} level ${payload.programme}.` },
+      ]);
+    } catch (e) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: e.message || "Unable to generate timetable right now." },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -37,7 +128,12 @@ export default function ChatTimetablePage() {
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
             <h3 className="font-semibold text-slate-800">AI Timetable Assistant</h3>
-            <button className="text-xs rounded-md border px-2 py-1">New Chat</button>
+            <button
+              className="text-xs rounded-md border px-2 py-1"
+              onClick={() => setMessages([{ role: "assistant", text: "New chat started. Ask for a timetable, e.g. 'Generate 300 MIS timetable'." }])}
+            >
+              New Chat
+            </button>
           </div>
           <div className="p-3 h-[460px] overflow-y-auto space-y-3 bg-slate-50">
             {messages.map((m, i) => (
@@ -57,7 +153,9 @@ export default function ChatTimetablePage() {
               className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
               placeholder="Type your request..."
             />
-            <button onClick={sendMessage} className="rounded-lg bg-cu-purple text-cu-gold px-4">Send</button>
+            <button onClick={sendMessage} disabled={loading} className="rounded-lg bg-cu-purple text-cu-gold px-4 disabled:opacity-50">
+              {loading ? "..." : "Send"}
+            </button>
           </div>
         </div>
 
