@@ -59,7 +59,7 @@ export default function TimetablePage() {
 
   return (
     <AppShell title={`${dept || "Department"} ${level || ""} Timetable`.trim()} subtitle="Review in grid or list view and export as needed.">
-      <div className="max-w-5xl">
+      <div className="w-full">
         <div className="mb-3">
           <BackButton label="Back to Lookup" />
         </div>

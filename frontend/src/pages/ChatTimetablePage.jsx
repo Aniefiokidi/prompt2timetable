@@ -124,8 +124,8 @@ export default function ChatTimetablePage() {
 
   return (
     <AppShell title="AI Timetable Assistant" subtitle="Chat-based timetable generation + live timetable view.">
-      <div className="grid grid-cols-1 xl:grid-cols-[360px,1fr] gap-4">
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(320px,420px),minmax(0,1fr)] gap-4">
+        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden min-h-[560px]">
           <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
             <h3 className="font-semibold text-slate-800">AI Timetable Assistant</h3>
             <button
@@ -159,7 +159,7 @@ export default function ChatTimetablePage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-3 overflow-hidden">
           <TimetableGrid timetable={timetable} />
         </div>
       </div>

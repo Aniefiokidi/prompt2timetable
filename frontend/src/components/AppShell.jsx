@@ -20,7 +20,7 @@ export default function AppShell({ title, subtitle, children }) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
+        <div className="w-full max-w-[1500px] mx-auto px-4 lg:px-6 py-3 md:py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img
               src={OFFICIAL_CU_LOGO_URL}
@@ -43,8 +43,8 @@ export default function AppShell({ title, subtitle, children }) {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-[230px,1fr] gap-6">
-        <aside className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 h-fit">
+      <div className="w-full max-w-[1500px] mx-auto px-4 lg:px-6 py-6 grid grid-cols-1 lg:grid-cols-[250px,minmax(0,1fr)] gap-6">
+        <aside className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 h-fit lg:sticky lg:top-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 px-2 mb-2">Navigation</p>
           <nav className="space-y-1">
             {NAV_ITEMS.map((item) => {

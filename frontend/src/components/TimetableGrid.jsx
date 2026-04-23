@@ -57,7 +57,7 @@ export default function TimetableGrid({ timetable }) {
   if (!timetable || timetable.length === 0) return <div>No timetable data.</div>;
 
   return (
-    <div className="w-full max-w-5xl mx-auto mt-4">
+    <div className="w-full mt-4">
       {clashes.length > 0 && (
         <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
           Warning: {clashes.length} slot{clashes.length > 1 ? "s" : ""} have course clashes!
