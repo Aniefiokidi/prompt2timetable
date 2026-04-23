@@ -43,10 +43,25 @@ export default function ExportBar({ timetable, department, level }) {
   }
 
   return (
-    <div className="flex gap-4 mb-4">
-      <button className="bg-cu-purple text-cu-gold px-4 py-2 rounded shadow" onClick={() => download("pdf")}>Download PDF</button>
-      <button className="bg-cu-purple text-cu-gold px-4 py-2 rounded shadow" onClick={() => download("text")}>Copy as Text</button>
-      <button className="bg-cu-purple text-cu-gold px-4 py-2 rounded shadow" onClick={() => download("csv")}>Download CSV</button>
+    <div className="flex flex-wrap gap-3 mb-5">
+      <button
+        className="inline-flex items-center gap-2 bg-cu-purple hover:bg-purple-900 text-cu-gold px-4 py-2.5 rounded-lg shadow-sm transition"
+        onClick={() => download("pdf")}
+      >
+        Download PDF
+      </button>
+      <button
+        className="inline-flex items-center gap-2 bg-white border border-cu-purple/30 hover:bg-cu-purple/5 text-cu-purple px-4 py-2.5 rounded-lg shadow-sm transition"
+        onClick={() => download("text")}
+      >
+        Download Text
+      </button>
+      <button
+        className="inline-flex items-center gap-2 bg-white border border-cu-purple/30 hover:bg-cu-purple/5 text-cu-purple px-4 py-2.5 rounded-lg shadow-sm transition"
+        onClick={() => download("csv")}
+      >
+        Download CSV
+      </button>
     </div>
   );
 }

@@ -77,6 +77,8 @@ async def api_student_timetable(body: dict = Body(...)):
         return JSONResponse(content=result)
     except FileNotFoundError as e:
         return JSONResponse(content={"error": str(e)}, status_code=503)
+    except RuntimeError as e:
+        return JSONResponse(content={"error": str(e)}, status_code=503)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
