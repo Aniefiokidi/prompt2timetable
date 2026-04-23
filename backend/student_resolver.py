@@ -80,7 +80,16 @@ def load_processed():
             "Please run: python backend/preprocess.py"
         )
     with open(path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+        data = json.load(f)
+
+    timetable = data.get("timetable", [])
+    if not timetable:
+        raise RuntimeError(
+            "processed_timetable.json has no timetable entries. "
+            "Ensure TIMETABLE Excel files exist, then run: python backend/preprocess.py"
+        )
+
+    return data
 
 
 def normalize_level(level):
