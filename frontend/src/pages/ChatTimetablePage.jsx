@@ -21,6 +21,7 @@ export default function ChatTimetablePage() {
   const [messages, setMessages] = useState(seedMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingRequest, setPendingRequest] = useState(null);
   const [timetable, setTimetable] = useState(() => {
     const local = JSON.parse(window.localStorage.getItem("timetable") || "null");
     return local?.timetable?.length ? local.timetable : sampleTimetable;
@@ -34,6 +35,13 @@ export default function ChatTimetablePage() {
         department_code: "CIS",
         department_name: "Department of Computer and Information Sciences",
         programme: "Management Information Systems",
+      },
+      ARC: {
+        aliases: ["ARC", "ARCHITECTURE"],
+        college: "CST",
+        department_code: "ARC",
+        department_name: "Department of Architecture",
+        programme: "Architecture",
       },
       ICE: {
         aliases: ["ICE", "INFORMATION COMMUNICATION ENGINEERING", "INFORMATION AND COMMUNICATION ENGINEERING"],
@@ -50,7 +58,7 @@ export default function ChatTimetablePage() {
         programme: "Electrical and Electronics Engineering",
       },
       CSC: {
-        aliases: ["CSC", "COMPUTER SCIENCE"],
+        aliases: ["CSC", "COS", "COMPUTER SCIENCE"],
         college: "CST",
         department_code: "CIS",
         department_name: "Department of Computer and Information Sciences",
@@ -72,16 +80,27 @@ export default function ChatTimetablePage() {
     const levelMatch = upper.match(/\b(100|200|300|400|500)\b/);
     const level = levelMatch ? levelMatch[1] : null;
 
-    const aliasEntry = Object.values(aliasConfig).find((cfg) => cfg.aliases.some((a) => upper.includes(a)));
-    if (!aliasEntry || !level) return null;
+    const codeMatch = upper.match(/\b([A-Z]{2,4})\s*\d{3}\b/);
+    const codePrefix = codeMatch ? codeMatch[1] : null;
+    const aliasEntry =
+      Object.values(aliasConfig).find((cfg) => cfg.aliases.some((a) => upper.includes(a))) ||
+      (codePrefix ? Object.values(aliasConfig).find((cfg) => cfg.aliases.includes(codePrefix)) : null);
 
     return {
-      college: aliasEntry.college,
-      department: aliasEntry.department_code,
-      department_code: aliasEntry.department_code,
-      department_name: aliasEntry.department_name,
-      programme: aliasEntry.programme,
+      aliasEntry,
       level,
+    };
+  };
+
+  const buildPayload = (parsed) => {
+    if (!parsed?.aliasEntry || !parsed?.level) return null;
+    return {
+      college: parsed.aliasEntry.college,
+      department: parsed.aliasEntry.department_code,
+      department_code: parsed.aliasEntry.department_code,
+      department_name: parsed.aliasEntry.department_name,
+      programme: parsed.aliasEntry.programme,
+      level: parsed.level,
     };
   };
 
@@ -91,13 +110,37 @@ export default function ChatTimetablePage() {
     setMessages((prev) => [...prev, { role: "user", text: userText }]);
     setInput("");
 
-    const payload = parsePrompt(userText);
+    const parsed = parsePrompt(userText);
+    const combined = {
+      aliasEntry: parsed.aliasEntry || pendingRequest?.aliasEntry || null,
+      level: parsed.level || pendingRequest?.level || null,
+    };
+
+    if (!combined.aliasEntry && combined.level) {
+      setPendingRequest({ level: combined.level });
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: `Got level ${combined.level}. Please add department/course (e.g., MIS, ICE, EIE, Architecture, CSC111).` },
+      ]);
+      return;
+    }
+
+    if (combined.aliasEntry && !combined.level) {
+      setPendingRequest({ aliasEntry: combined.aliasEntry });
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: `Got ${combined.aliasEntry.programme}. Please add the level (100/200/300/400/500).` },
+      ]);
+      return;
+    }
+
+    const payload = buildPayload(combined);
     if (!payload) {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          text: "Please include both a level (e.g., 200) and a course/department keyword (e.g., MIS, ICE, EIE, CSC, MAC).",
+          text: "Please include a level and course/department. I understand short or full forms (e.g., MIS, ICE, EIE, Architecture, CSC111).",
         },
       ]);
       return;
@@ -108,6 +151,7 @@ export default function ChatTimetablePage() {
       const data = await getStudentTimetable(payload);
       setTimetable(data.timetable || []);
       window.localStorage.setItem("timetable", JSON.stringify(data));
+      setPendingRequest(null);
       setMessages((prev) => [
         ...prev,
         { role: "assistant", text: `Timetable generated for ${payload.level} level ${payload.programme}.` },
@@ -130,7 +174,10 @@ export default function ChatTimetablePage() {
             <h3 className="font-semibold text-slate-800">AI Timetable Assistant</h3>
             <button
               className="text-xs rounded-md border px-2 py-1"
-              onClick={() => setMessages([{ role: "assistant", text: "New chat started. Ask for a timetable, e.g. 'Generate 300 MIS timetable'." }])}
+              onClick={() => {
+                setPendingRequest(null);
+                setMessages([{ role: "assistant", text: "New chat started. Ask for a timetable, e.g. '300 MIS' or 'Architecture 100'." }]);
+              }}
             >
               New Chat
             </button>

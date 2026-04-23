@@ -96,7 +96,7 @@ export default function TimetableGrid({ timetable }) {
                       return c.day === day && start === hour;
                     });
                     return (
-                      <td key={day} className="border-b border-r last:border-r-0 p-1.5 align-top min-w-[140px] h-16">
+                      <td key={day} className="border-b border-r last:border-r-0 p-1 align-top min-w-[108px] h-16">
                         {cellCourses.map((course, idx) => (
                           <div
                             key={course.course_code + idx}
@@ -122,7 +122,7 @@ export default function TimetableGrid({ timetable }) {
                     return c.day === day && (start === null || Number.isNaN(start));
                   });
                   return (
-                    <td key={`${day}-unscheduled`} className="border-r last:border-r-0 p-1.5 align-top min-w-[140px]">
+                    <td key={`${day}-unscheduled`} className="border-r last:border-r-0 p-1 align-top min-w-[108px]">
                       {unscheduledCourses.map((course, idx) => (
                         <div
                           key={course.course_code + idx}
