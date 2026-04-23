@@ -28,50 +28,38 @@ export default function ChatTimetablePage() {
   });
 
   const aliasConfig = useMemo(
-    () => ({
-      MIS: {
-        aliases: ["MIS", "MANAGEMENT INFORMATION SYSTEM", "MANAGEMENT INFORMATION SYSTEMS"],
-        college: "CST",
-        department_code: "CIS",
-        department_name: "Department of Computer and Information Sciences",
-        programme: "Management Information Systems",
-      },
-      ARC: {
-        aliases: ["ARC", "ARCHITECTURE"],
-        college: "CST",
-        department_code: "ARC",
-        department_name: "Department of Architecture",
-        programme: "Architecture",
-      },
-      ICE: {
-        aliases: ["ICE", "INFORMATION COMMUNICATION ENGINEERING", "INFORMATION AND COMMUNICATION ENGINEERING"],
-        college: "COE",
-        department_code: "EIE",
-        department_name: "Department of Electrical and Information Engineering",
-        programme: "Information and Communication Engineering",
-      },
-      EIE: {
-        aliases: ["EIE", "EEE", "ELECTRICAL ENGINEERING", "ELECTRICAL AND ELECTRONICS ENGINEERING"],
-        college: "COE",
-        department_code: "EIE",
-        department_name: "Department of Electrical and Information Engineering",
-        programme: "Electrical and Electronics Engineering",
-      },
-      CSC: {
-        aliases: ["CSC", "COS", "COMPUTER SCIENCE"],
-        college: "CST",
-        department_code: "CIS",
-        department_name: "Department of Computer and Information Sciences",
-        programme: "Computer Science",
-      },
-      MAC: {
-        aliases: ["MAC", "MASS COMMUNICATION"],
-        college: "CMSS",
-        department_code: "MAC",
-        department_name: "Department of Mass Communication",
-        programme: "Mass Communication",
-      },
-    }),
+    () => [
+      { aliases: ["MIS", "MANAGEMENT INFORMATION SYSTEM", "MANAGEMENT INFORMATION SYSTEMS"], college: "CST", department_code: "CIS", department_name: "Department of Computer and Information Sciences", programme: "Management Information Systems" },
+      { aliases: ["CSC", "COS", "COMPUTER SCIENCE"], college: "CST", department_code: "CIS", department_name: "Department of Computer and Information Sciences", programme: "Computer Science" },
+      { aliases: ["ICE", "INFORMATION COMMUNICATION ENGINEERING", "INFORMATION AND COMMUNICATION ENGINEERING"], college: "COE", department_code: "EIE", department_name: "Department of Electrical and Information Engineering", programme: "Information and Communication Engineering" },
+      { aliases: ["EIE", "EEE", "ELECTRICAL ENGINEERING", "ELECTRICAL AND ELECTRONICS ENGINEERING"], college: "COE", department_code: "EIE", department_name: "Department of Electrical and Information Engineering", programme: "Electrical and Electronics Engineering" },
+      { aliases: ["CEN", "COMPUTER ENGINEERING"], college: "COE", department_code: "EIE", department_name: "Department of Electrical and Information Engineering", programme: "Computer Engineering" },
+      { aliases: ["CHE", "CHEMICAL ENGINEERING"], college: "COE", department_code: "CHE", department_name: "Department of Chemical Engineering", programme: "Chemical Engineering" },
+      { aliases: ["CVE", "CIVIL ENGINEERING"], college: "COE", department_code: "CVE", department_name: "Department of Civil Engineering", programme: "Civil Engineering" },
+      { aliases: ["MEE", "MCE", "MECHANICAL ENGINEERING"], college: "COE", department_code: "MCE", department_name: "Department of Mechanical Engineering", programme: "Mechanical Engineering" },
+      { aliases: ["PET", "PETROLEUM ENGINEERING"], college: "COE", department_code: "PET", department_name: "Department of Petroleum Engineering", programme: "Petroleum Engineering" },
+      { aliases: ["ARC", "ARCHITECTURE"], college: "CST", department_code: "ARC", department_name: "Department of Architecture", programme: "Architecture" },
+      { aliases: ["BLD", "BUILDING TECHNOLOGY"], college: "CST", department_code: "BLD", department_name: "Department of Building Technology", programme: "Building Technology" },
+      { aliases: ["EST", "ESM", "ESTATE MANAGEMENT"], college: "CST", department_code: "ESM", department_name: "Department of Estate Management", programme: "Estate Management" },
+      { aliases: ["BIO", "BIOLOGY", "MICROBIOLOGY", "BIOLOGICAL SCIENCES"], college: "CST", department_code: "BIO", department_name: "Department of Biological Sciences", programme: "Biology" },
+      { aliases: ["BCH", "BIOCHEMISTRY"], college: "CST", department_code: "BCH", department_name: "Department of Biochemistry", programme: "Biochemistry" },
+      { aliases: ["CHM", "ICH", "INDUSTRIAL CHEMISTRY", "CHEMISTRY"], college: "CST", department_code: "CHM", department_name: "Department of Chemistry", programme: "Industrial Chemistry" },
+      { aliases: ["MTH", "MAT", "MATHEMATICS", "INDUSTRIAL MATHEMATICS"], college: "CST", department_code: "MAT", department_name: "Department of Mathematics", programme: "Industrial Mathematics (Computer Science Option)" },
+      { aliases: ["PHY", "PHYSICS", "INDUSTRIAL PHYSICS"], college: "CST", department_code: "PHY", department_name: "Department of Physics", programme: "Industrial Physics (Electronics and IT Applications)" },
+      { aliases: ["ENG", "ENGLISH"], college: "CLDS", department_code: "ENG", department_name: "Department of English", programme: "English" },
+      { aliases: ["IRL", "INTERNATIONAL RELATIONS"], college: "CLDS", department_code: "IRL", department_name: "Department of International Relations", programme: "International Relations" },
+      { aliases: ["PSS", "POLICY AND STRATEGIC STUDIES"], college: "CLDS", department_code: "PSS", department_name: "Department of Policy and Strategic Studies", programme: "Policy and Strategic Studies" },
+      { aliases: ["PSC", "POS", "POLITICAL SCIENCE"], college: "CLDS", department_code: "POS", department_name: "Department of Political Science", programme: "Political Science" },
+      { aliases: ["PSY", "PSI", "PSYCHOLOGY"], college: "CLDS", department_code: "PSY", department_name: "Department of Psychology", programme: "Psychology" },
+      { aliases: ["ACC", "ACCOUNTING"], college: "CMSS", department_code: "ACC", department_name: "Department of Accounting", programme: "Accounting" },
+      { aliases: ["BUS", "BUA", "BUSINESS ADMINISTRATION"], college: "CMSS", department_code: "BUA", department_name: "Department of Business Administration", programme: "Business Administration" },
+      { aliases: ["ECO", "ECN", "ECONOMICS"], college: "CMSS", department_code: "ECN", department_name: "Department of Economics", programme: "Economics" },
+      { aliases: ["FIN", "FINANCE", "FINANCIAL TECHNOLOGY"], college: "CMSS", department_code: "FIN", department_name: "Department of Finance", programme: "Finance" },
+      { aliases: ["IRM", "IRH", "INDUSTRIAL RELATIONS", "HUMAN RESOURCE MANAGEMENT"], college: "CMSS", department_code: "IRH", department_name: "Department of Industrial Relations and Human Resource Management", programme: "Industrial Relations and Human Resource Management" },
+      { aliases: ["MKT", "MARKETING"], college: "CMSS", department_code: "MKT", department_name: "Department of Marketing", programme: "Marketing" },
+      { aliases: ["MAC", "MASS COMMUNICATION"], college: "CMSS", department_code: "MAC", department_name: "Department of Mass Communication", programme: "Mass Communication" },
+      { aliases: ["SOC", "SOCIOLOGY"], college: "CMSS", department_code: "SOC", department_name: "Department of Sociology", programme: "Sociology" },
+    ],
     []
   );
 
@@ -83,8 +71,8 @@ export default function ChatTimetablePage() {
     const codeMatch = upper.match(/\b([A-Z]{2,4})\s*\d{3}\b/);
     const codePrefix = codeMatch ? codeMatch[1] : null;
     const aliasEntry =
-      Object.values(aliasConfig).find((cfg) => cfg.aliases.some((a) => upper.includes(a))) ||
-      (codePrefix ? Object.values(aliasConfig).find((cfg) => cfg.aliases.includes(codePrefix)) : null);
+      aliasConfig.find((cfg) => cfg.aliases.some((a) => upper.includes(a))) ||
+      (codePrefix ? aliasConfig.find((cfg) => cfg.aliases.includes(codePrefix)) : null);
 
     return {
       aliasEntry,
