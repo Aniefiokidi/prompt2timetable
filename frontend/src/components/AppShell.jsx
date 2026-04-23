@@ -6,9 +6,11 @@ const OFFICIAL_CU_LOGO_URL =
   "https://www.covenantuniversity.edu.ng/images/logos/covenant-university-logo-desktop.png";
 
 const NAV_ITEMS = [
-  { label: "Home", to: "/" },
+  { label: "Dashboard", to: "/" },
+  { label: "Upload Data", to: "/upload" },
+  { label: "Generate Timetable", to: "/assistant" },
+  { label: "View Timetable", to: "/timetable" },
   { label: "Lookup", to: "/lookup" },
-  { label: "Timetable", to: "/timetable" },
   { label: "Evaluation", to: "/evaluation" },
 ];
 
