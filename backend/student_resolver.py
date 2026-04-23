@@ -75,12 +75,38 @@ GENERAL_PREFIXES = ["GST", "DLD", "TMC", "EDS", "CIT", "COV", "GEC", "GET"]
 def load_processed():
     path = os.path.join(os.path.dirname(__file__), 'data', 'processed_timetable.json')
     if not os.path.exists(path):
-        raise FileNotFoundError(
-            f"processed_timetable.json not found at {path}. "
-            "Please run: python backend/preprocess.py"
+        data = {"timetable": []}
+    else:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+    timetable = data.get("timetable", [])
+    if timetable:
+        return data
+
+    # Auto-recover: regenerate processed_timetable.json from TIMETABLE/*.xlsx
+    try:
+        try:
+            from preprocess import preprocess
+        except ImportError:
+            from backend.preprocess import preprocess
+        generated = preprocess()
+    except Exception as e:
+        raise RuntimeError(
+            "processed_timetable.json is missing/empty and auto-preprocess failed. "
+            "Ensure TIMETABLE Excel files exist, then run: python backend/preprocess.py. "
+            f"Underlying error: {e}"
+        ) from e
+
+    generated_rows = generated.get("timetable", [])
+    if not generated_rows:
+        raise RuntimeError(
+            "processed_timetable.json has no timetable entries after preprocessing. "
+            "Check TIMETABLE Excel files and required sheet/column structure, then rerun: "
+            "python backend/preprocess.py"
         )
-    with open(path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+
+    return generated
 
 
 def normalize_level(level):
