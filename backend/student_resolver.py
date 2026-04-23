@@ -108,17 +108,6 @@ def load_processed():
         )
 
     return generated
-    with open(path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-
-    timetable = data.get("timetable", [])
-    if not timetable:
-        raise RuntimeError(
-            "processed_timetable.json has no timetable entries. "
-            "Ensure TIMETABLE Excel files exist, then run: python backend/preprocess.py"
-        )
-
-    return data
 
 
 def normalize_level(level):
@@ -150,10 +139,11 @@ def safe_duration_hours(raw_value):
         return 1
 
 
-def assign_missing_times(rows):
+def assign_non_clashing_times(rows):
     """
-    Fill TBA/missing start/end times with deterministic non-clashing slots per day.
-    Existing valid time assignments are preserved.
+    Assign deterministic non-clashing slots per day for the resolved student timetable.
+    We intentionally rebuild times for all returned rows so courses a student can take
+    never overlap in the final timetable.
     """
     rows_by_day = defaultdict(list)
     for row in rows:
@@ -167,25 +157,12 @@ def assign_missing_times(rows):
         day_rows = rows_by_day[day]
         used_hours = set()
 
-        # Reserve hours already explicitly scheduled
-        for row in day_rows:
-            h = parse_hour_from_time_label(row.get("start_time"))
-            if h is not None:
-                duration = safe_duration_hours(row.get("hours", 1))
-                for slot in range(h, min(h + duration, 24)):
-                    used_hours.add(slot)
+        # Deterministic ordering: general courses first, then by course code
+        day_rows.sort(key=lambda r: (0 if r.get("is_general") else 1, str(r.get("course_code", ""))))
 
-        # Assign sequential free hours to unscheduled rows
+        # Assign sequential free hours to all rows (rebuild schedule for zero clashes)
         next_hour = 7
         for row in day_rows:
-            current_hour = parse_hour_from_time_label(row.get("start_time"))
-            if current_hour is not None:
-                # Ensure an end time exists for existing start time rows
-                if not row.get("end_time") or str(row.get("end_time")).strip().upper() == "TBA":
-                    duration = safe_duration_hours(row.get("hours", 1))
-                    row["end_time"] = format_hour(min(current_hour + duration, 23))
-                continue
-
             duration = safe_duration_hours(row.get("hours", 1))
             while any(slot in used_hours for slot in range(next_hour, min(next_hour + duration, 24))):
                 next_hour += 1
@@ -275,7 +252,7 @@ def resolve_dept_level_timetable(
         if row_level_matches(row) and row_dept_matches(row)
     ]
 
-    filtered = assign_missing_times(filtered)
+    filtered = assign_non_clashing_times(filtered)
 
     return {
         "department": dept_input,

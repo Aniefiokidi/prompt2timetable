@@ -3,6 +3,7 @@ import json
 import re
 import pandas as pd
 import numpy as np
+from collections import defaultdict
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 DATASET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'TIMETABLE')
@@ -186,6 +187,73 @@ def normalize_filename(name):
     return re.sub(r"[^a-z0-9]", "", str(name).lower())
 
 
+def parse_hour(time_label):
+    if not time_label:
+        return None
+    m = re.match(r"^\s*(\d{1,2})", str(time_label))
+    if not m:
+        return None
+    hour = int(m.group(1))
+    return hour if 0 <= hour <= 23 else None
+
+
+def safe_hours(value):
+    try:
+        return max(1, int(float(value)))
+    except (TypeError, ValueError):
+        return 1
+
+
+def hh(hour):
+    return f"{hour:02d}:00"
+
+
+def assign_timeslots(entries):
+    """
+    Automatically assign deterministic non-overlapping slots for entries with TBA times.
+    Grouping key ensures clashes are avoided within a department/day/level timetable view.
+    """
+    grouped = defaultdict(list)
+    for entry in entries:
+        level_key = tuple(entry.get("level", [])) if isinstance(entry.get("level"), list) else (entry.get("level"),)
+        key = (entry.get("department", ""), entry.get("day", ""), level_key)
+        grouped[key].append(entry)
+
+    for _, rows in grouped.items():
+        used = set()
+        # Reserve existing explicit slots
+        for row in rows:
+            sh = parse_hour(row.get("start_time"))
+            if sh is None:
+                continue
+            duration = safe_hours(row.get("hours"))
+            for slot in range(sh, min(sh + duration, 24)):
+                used.add(slot)
+
+        next_hour = 7
+        for row in rows:
+            sh = parse_hour(row.get("start_time"))
+            duration = safe_hours(row.get("hours"))
+
+            if sh is not None:
+                if not row.get("end_time") or str(row.get("end_time")).strip().upper() == "TBA":
+                    row["end_time"] = hh(min(sh + duration, 23))
+                continue
+
+            while any(slot in used for slot in range(next_hour, min(next_hour + duration, 24))):
+                next_hour += 1
+
+            start_hour = next_hour
+            end_hour = min(start_hour + duration, 23)
+            row["start_time"] = hh(start_hour)
+            row["end_time"] = hh(end_hour)
+            for slot in range(start_hour, min(start_hour + duration, 24)):
+                used.add(slot)
+            next_hour += 1
+
+    return entries
+
+
 # ── Main preprocess function (ONE definition only) ───────────────────────────
 
 def preprocess():
@@ -358,6 +426,7 @@ def preprocess():
                             "type":            sharing_type,
                         }
 
+    timetable = assign_timeslots(timetable)
     result = {"timetable": to_native(timetable)}
 
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
